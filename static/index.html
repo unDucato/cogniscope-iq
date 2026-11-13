@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" id="meta-theme-color" content="#f6f7f4">
+    <title>CogniScope — Ориентировочный IQ-тест и когнитивный профиль</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234f46e5' stroke-width='2.2'%3E%3Crect x='3' y='3' width='7.5' height='7.5' rx='2'/%3E%3Crect x='13.5' y='3' width='7.5' height='7.5' rx='2'/%3E%3Crect x='3' y='13.5' width='7.5' height='7.5' rx='2'/%3E%3Ccircle cx='17.25' cy='17.25' r='3.75' fill='%234f46e5'/%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Manrope:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>html.i18n-pending body { visibility: hidden; }</style>
+    <script>
+        (() => {
+            try {
+                const savedTheme = localStorage.getItem("iq_theme");
+                const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+                const theme = savedTheme === "dark" || savedTheme === "light" ? savedTheme : (prefersDark ? "dark" : "light");
+                document.documentElement.dataset.theme = theme;
+                const meta = document.getElementById("meta-theme-color");
+                if (meta) meta.setAttribute("content", theme === "dark" ? "#090a0f" : "#f6f7f4");
+
+                const savedLang = localStorage.getItem("iq_lang");
+                const sysLang = (navigator.language || (navigator.languages && navigator.languages[0]) || "en").toLowerCase();
+                const lang = savedLang === "ru" || savedLang === "en" ? savedLang : (sysLang.startsWith("ru") ? "ru" : "en");
+                document.documentElement.lang = lang;
+                document.documentElement.dataset.lang = lang;
+                if (lang !== "ru") {
+                    document.documentElement.classList.add("i18n-pending");
+                    setTimeout(() => document.documentElement.classList.remove("i18n-pending"), 1500);
+                }
+            } catch { /* игнор */ }
+        })();
+    </script>
+    <link rel="stylesheet" href="/static/style.css?v={{VERSION}}">
+</head>
+<body>
+    <header class="top-bar">
+        <div class="container top-bar__inner">
+            <button type="button" class="brand" id="btn-logo" data-t-aria="aria_home" aria-label="На главную">
+                <span class="brand__mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="20" height="20">
+                        <use href="/static/icons.svg?v={{VERSION}}#icon-logo"></use>
+                    </svg>
+                </span>
+                <span class="brand__name">CogniScope</span>
+                <span class="brand__tag" data-t="brand_tag">Lab</span>
+            </button>
+            <div class="top-bar__actions">
+                <span class="quiz-timer-pill" id="header-timer" hidden>00:00</span>
+                <button type="button" class="btn btn--secondary btn--lang" id="btn-lang-toggle" data-t-aria="aria_lang_toggle" data-t-title="aria_lang_toggle" aria-label="Переключить язык (RU / EN)" title="Переключить язык (RU / EN)">
+                    <span class="lang-code" data-lang-code="ru">RU</span><span class="lang-sep">/</span><span class="lang-code" data-lang-code="en">EN</span>
+                </button>
+                <button type="button" class="btn btn--secondary btn--icon" id="btn-theme-toggle" aria-label="Включить тёмную тему" title="Включить тёмную тему">
+                    <svg class="theme-icon theme-icon--moon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                        <use href="/static/icons.svg?v={{VERSION}}#icon-moon"></use>
+                    </svg>
+                    <svg class="theme-icon theme-icon--sun" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                        <use href="/static/icons.svg?v={{VERSION}}#icon-sun"></use>
+                    </svg>
+                </button>
+                <button type="button" class="btn btn--ghost btn--sm" id="btn-header-restart" hidden data-t-aria="btn_restart" data-t-title="btn_restart" aria-label="Пройти заново" title="Пройти заново">
+                    <svg class="restart-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                        <use href="/static/icons.svg?v={{VERSION}}#icon-restart"></use>
+                    </svg>
+                    <span class="btn-restart-label" data-t="btn_restart">Пройти заново</span>
+                </button>
+                <button type="button" class="btn btn--primary btn--sm" id="btn-header-start">Начать тест</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-shell">
+        <section class="screen container" id="screen-landing">
+            <div class="hero-split">
+                <div class="hero-copy">
+                    <span class="pill-badge" data-t="landing_badge">15 визуальных и логических задач · ~5 минут</span>
+                    <h1 class="hero__title" data-t="landing_title">Узнайте ориентировочный уровень IQ и карту сильных сторон мышления</h1>
+                    <p class="hero__subtitle" data-t="landing_subtitle">Структурированный экспресс-тест оценивает пространственное воображение, числовой анализ, логику и скорость решения задач.</p>
+                    <div class="hero__cta-row">
+                        <button type="button" class="btn btn--primary btn--lg" id="btn-start-quiz"><span>Начать IQ-тест</span><span aria-hidden="true">→</span></button>
+                        <p class="hero__note" data-t="landing_note">Бесплатное прохождение · Без регистрации до завершения</p>
+                    </div>
+                    <ul class="method-facts">
+                        <li>
+                            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><use href="/static/icons.svg?v={{VERSION}}#icon-check"></use></svg>
+                            <span data-t="landing_fact_1">Серверная генерация матриц 3×3</span>
+                        </li>
+                        <li>
+                            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><use href="/static/icons.svg?v={{VERSION}}#icon-check"></use></svg>
+                            <span data-t="landing_fact_2">Учёт веса сложности и темпа</span>
+                        </li>
+                        <li>
+                            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><use href="/static/icons.svg?v={{VERSION}}#icon-check"></use></svg>
+                            <span data-t="landing_fact_3">Не является медицинской диагностикой</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <aside class="card hero-demo-card" id="hero-demo-card" data-t-aria="demo_aria" aria-label="Интерактивный пример задачи">
+                    <div class="hero-demo-card__head">
+                        <span class="demo-chip" data-t="demo_badge">Живой пример · Не входит в тест</span>
+                        <button type="button" class="btn btn--ghost btn--xs" id="btn-demo-reset" hidden data-t="demo_reset">Сбросить</button>
+                    </div>
+                    <p class="hero-demo-card__prompt" data-t="demo_prompt">Определите закономерность в строках и выберите фигуру вместо «?»:</p>
+                    <div class="hero-demo-matrix" id="hero-demo-matrix"></div>
+                    <div class="hero-demo-options" id="hero-demo-options" role="group" data-t-aria="demo_options_aria" aria-label="Варианты ответа к примеру"></div>
+                    <div class="hero-demo-feedback" id="hero-demo-feedback" hidden>
+                        <strong id="hero-demo-status"></strong>
+                        <p id="hero-demo-explain"></p>
+                    </div>
+                </aside>
+            </div>
+
+            <div class="steps-grid">
+                <article class="step-card">
+                    <span class="step-card__num">01</span>
+                    <h3 data-t="step1_title">15 фиксированных заданий</h3>
+                    <p data-t="step1_desc">Матрицы Равена, повороты, числовые прогрессии и дедукция, сгенерированные на сервере в SVG.</p>
+                </article>
+                <article class="step-card">
+                    <span class="step-card__num">02</span>
+                    <h3 data-t="step2_title">Весовая модель и темп</h3>
+                    <p data-t="step2_desc">Алгоритм учитывает сложность каждой решённой задачи (от 1 до 5) и время принятия решений.</p>
+                </article>
+                <article class="step-card">
+                    <span class="step-card__num">03</span>
+                    <h3 data-t="step3_title">Когнитивный профиль</h3>
+                    <p data-t="step3_desc">Радар по 4 сферам, кривая нормального распределения и полный разбор всех 15 ответов.</p>
+                </article>
+            </div>
+
+            <div class="showcase-block reveal-on-scroll" id="landing-domains-explorer">
+                <div class="section-head">
+                    <span class="pill-badge" data-t="explorer_badge">Методика · 4 когнитивных домена</span>
+                    <h2 class="section-title" data-t="explorer_title">Что именно оценивает тест</h2>
+                    <p class="section-sub muted" data-t="explorer_sub">Переключайте сферы, чтобы увидеть формат заданий и принцип расчёта.</p>
+                </div>
+                <div class="explorer-card card">
+                    <div class="explorer-tabs" id="explorer-tabs" role="tablist" data-t-aria="explorer_tabs_aria" aria-label="Сферы когнитивной оценки">
+                        <button type="button" class="explorer-tab is-active" role="tab" aria-selected="true" data-domain-tab="spatial" data-t="radar_spatial">Пространство</button>
+                        <button type="button" class="explorer-tab" role="tab" aria-selected="false" data-domain-tab="numerical" data-t="radar_numerical">Числа</button>
+                        <button type="button" class="explorer-tab" role="tab" aria-selected="false" data-domain-tab="verbal_logic" data-t="radar_verbal_logic">Логика</button>
+                        <button type="button" class="explorer-tab" role="tab" aria-selected="false" data-domain-tab="speed" data-t="radar_speed">Скорость</button>
+                    </div>
+                    <div class="explorer-body">
+                        <div class="explorer-info">
+                            <span class="explorer-weight" id="explorer-weight"></span>
+                            <h3 id="explorer-title"></h3>
+                            <p class="muted" id="explorer-desc"></p>
+                            <p class="explorer-note" id="explorer-note"></p>
+                        </div>
+                        <div class="explorer-preview" id="explorer-preview" aria-hidden="true"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="showcase-block reveal-on-scroll" id="landing-report-preview">
+                <div class="section-head">
+                    <span class="pill-badge" data-t="report_preview_badge">Демо-образец отчёта · Иллюстративные данные</span>
+                    <h2 class="section-title" data-t="report_preview_title">Что вы увидите после завершения</h2>
+                    <p class="section-sub muted" data-t="report_preview_sub">После прохождения и разблокировки отчёта формируется детальная аналитика по 15 задачам.</p>
+                </div>
+                <div class="report-showcase-grid">
+                    <article class="card showcase-panel">
+                        <div class="showcase-panel__head">
+                            <span data-t="report_preview_curve_label">Кривая распределения и диапазон</span>
+                            <span class="showcase-demo-tag" data-t="demo_tag">Демо</span>
+                        </div>
+                        <div class="showcase-score-row">
+                            <div>
+                                <strong class="showcase-iq">114</strong>
+                                <span class="muted" data-t="report_preview_cat">Средний / выше среднего</span>
+                            </div>
+                            <div class="showcase-band-chip" data-t="report_preview_band">Интервал 105–120</div>
+                        </div>
+                        <div class="showcase-curve-svg" aria-hidden="true">
+                            <svg viewBox="0 0 280 96">
+                                <defs>
+                                    <linearGradient id="demo-bell-grad" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.28"/>
+                                        <stop offset="100%" stop-color="var(--accent)" stop-opacity="0.02"/>
+                                    </linearGradient>
+                                </defs>
+                                <path d="M 12 80 C 62 78, 92 16, 140 16 C 188 16, 218 78, 268 80 L 12 80 Z" fill="url(#demo-bell-grad)"/>
+                                <path class="anim-stroke" d="M 12 80 C 62 78, 92 16, 140 16 C 188 16, 218 78, 268 80" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round"/>
+                                <line x1="12" y1="80" x2="268" y2="80" stroke="var(--border-strong)" stroke-width="1.4"/>
+                                <line x1="148" y1="80" x2="206" y2="80" stroke="var(--success)" stroke-width="4" stroke-linecap="round"/>
+                                <circle cx="178" cy="30" r="4.5" fill="var(--ink)" stroke="var(--surface)" stroke-width="2"/>
+                            </svg>
+                        </div>
+                    </article>
+
+                    <article class="card showcase-panel">
+                        <div class="showcase-panel__head">
+                            <span data-t="report_preview_domains_label">Баланс по 4 сферам</span>
+                            <span class="showcase-demo-tag" data-t="demo_tag">Демо</span>
+                        </div>
+                        <div class="showcase-bars">
+                            <div class="showcase-bar-row">
+                                <div><span data-t="radar_spatial">Пространство</span><b>86%</b></div>
+                                <div class="showcase-track"><i style="--target-w: 86%"></i></div>
+                            </div>
+                            <div class="showcase-bar-row">
+                                <div><span data-t="radar_numerical">Числа</span><b>78%</b></div>
+                                <div class="showcase-track"><i style="--target-w: 78%"></i></div>
+                            </div>
+                            <div class="showcase-bar-row">
+                                <div><span data-t="radar_verbal_logic">Логика</span><b>90%</b></div>
+                                <div class="showcase-track"><i style="--target-w: 90%"></i></div>
+                            </div>
+                            <div class="showcase-bar-row">
+                                <div><span data-t="radar_speed">Скорость</span><b>81%</b></div>
+                                <div class="showcase-track"><i style="--target-w: 81%"></i></div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="card showcase-panel">
+                        <div class="showcase-panel__head">
+                            <span data-t="report_preview_review_label">Разбор каждого ответа</span>
+                            <span class="showcase-demo-tag" data-t="demo_tag">Демо</span>
+                        </div>
+                        <div class="showcase-review-mini">
+                            <div class="showcase-review-item is-ok">
+                                <span>#5 · 6.4s</span>
+                                <strong data-t="review_status_ok">Верно</strong>
+                            </div>
+                            <div class="showcase-review-item is-bad">
+                                <span>#12 · 14.1s</span>
+                                <strong data-t="review_status_bad">Ошибка</strong>
+                            </div>
+                            <p class="muted" data-t="report_preview_review_note">Фильтр ошибок, время на каждый вопрос и сравнение вашего варианта с правильным.</p>
+                        </div>
+                    </article>
+                </div>
+            </div>
+
+            <div class="showcase-block reveal-on-scroll" id="landing-usecases">
+                <div class="section-head">
+                    <span class="pill-badge" data-t="usecases_badge">Применение</span>
+                    <h2 class="section-title" data-t="usecases_title">Кому и зачем полезен тест</h2>
+                </div>
+                <div class="usecases-grid">
+                    <article class="step-card usecase-card">
+                        <span class="step-card__num">01</span>
+                        <h3 data-t="usecase1_title">Самодиагностика внимания</h3>
+                        <p data-t="usecase1_desc">Помогает понять, какие типы задач даются легче — визуальные матрицы, числовые ряды или вербальная логика.</p>
+                    </article>
+                    <article class="step-card usecase-card">
+                        <span class="step-card__num">02</span>
+                        <h3 data-t="usecase2_title">Подготовка к скринингам</h3>
+                        <p data-t="usecase2_desc">Удобный формат разминки перед ассессментами и тестами на аналитическое мышление с реальным таймером.</p>
+                    </article>
+                    <article class="step-card usecase-card">
+                        <span class="step-card__num">03</span>
+                        <h3 data-t="usecase3_title">Баланс точности и темпа</h3>
+                        <p data-t="usecase3_desc">Отдельный учёт среднего времени ответа показывает, где вы спешите, а где тратите лишние секунды.</p>
+                    </article>
+                </div>
+                <ul class="principles-strip">
+                    <li>
+                        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><use href="/static/icons.svg?v={{VERSION}}#icon-shield"></use></svg>
+                        <span data-t="principle_1">Расчёт и проверка строго на сервере</span>
+                    </li>
+                    <li>
+                        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><use href="/static/icons.svg?v={{VERSION}}#icon-check"></use></svg>
+                        <span data-t="principle_2">Без спама и навязанной регистрации на старте</span>
+                    </li>
+                    <li>
+                        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><use href="/static/icons.svg?v={{VERSION}}#icon-check"></use></svg>
+                        <span data-t="principle_3">Прозрачные условия тарифов без скрытых списаний</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="bottom-cta-card card reveal-on-scroll">
+                <div class="bottom-cta-card__copy">
+                    <h2 data-t="bottom_cta_title">Готовы проверить свой когнитивный профиль?</h2>
+                    <p class="muted" data-t="bottom_cta_sub">15 задач займут около 5 минут. Прогресс и таймер сохраняются автоматически, если нужно сделать паузу.</p>
+                </div>
+                <button type="button" class="btn btn--primary btn--lg" id="btn-bottom-start"><span>Начать IQ-тест</span><span aria-hidden="true">→</span></button>
+            </div>
+
+        </section>
+
+        <section class="screen container container--narrow" id="screen-quiz" hidden>
+            <div class="quiz-progress">
+                <div class="quiz-progress__meta">
+                    <span id="quiz-counter">Вопрос 1 из 15</span>
+                    <span id="quiz-kind-badge" class="kind-chip">Логика</span>
+                </div>
+                <div class="progress-track"><div class="progress-fill" id="quiz-progress-fill" style="width: 0%"></div></div>
+            </div>
+            <article class="card quiz-card" id="quiz-card">
+                <h2 class="quiz-card__prompt" id="quiz-prompt"></h2>
+                <div class="quiz-card__visual" id="quiz-svg" hidden></div>
+                <div class="quiz-locked-note" id="quiz-locked-note" hidden data-t="quiz_locked_note">Ответ на этот вопрос уже зафиксирован. Вы можете просмотреть выбор или перейти вперёд.</div>
+                <div class="options-grid" id="quiz-options"></div>
+            </article>
+            <div class="quiz-nav">
+                <button type="button" class="btn btn--secondary" id="btn-prev" disabled data-t="quiz_prev">← Назад</button>
+                <button type="button" class="btn btn--primary" id="btn-next" disabled>Далее →</button>
+            </div>
+        </section>
+
+        <section class="screen container container--narrow" id="screen-analyzing" hidden>
+            <div class="card analyzing-card">
+                <div class="analyzing-spinner" aria-hidden="true"></div>
+                <h2 class="analyzing-card__title" data-t="analyzing_title">Рассчитываем ваш когнитивный профиль…</h2>
+                <p class="analyzing-card__sub" data-t="analyzing_sub">Система сопоставляет ответы со шкалой сложности и скоростью реакции</p>
+                <ul class="analyzing-steps" id="analyzing-steps">
+                    <li data-step="0" data-t="analyzing_step_0">Фиксация ответов на 15 заданий</li>
+                    <li data-step="1" data-t="analyzing_step_1">Взвешивание сложности по матрицам и рядам</li>
+                    <li data-step="2" data-t="analyzing_step_2">Анализ скорости обработки информации</li>
+                    <li data-step="3" data-t="analyzing_step_3">Расчёт ориентировочного IQ и перцентиля</li>
+                    <li data-step="4" data-t="analyzing_step_4">Формирование персонального отчёта</li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="screen container container--narrow" id="screen-email" hidden>
+            <div class="card auth-card">
+                <span class="pill-badge pill-badge--success" data-t="email_badge">Тест завершён · Отчёт сформирован</span>
+                <h2 data-t="email_title">Куда привязать ваш результат?</h2>
+                <p class="muted" data-t="email_sub">Укажите email для сохранения персонального профиля и доступа к разбору всех заданий.</p>
+                <form id="email-form" novalidate>
+                    <div class="field">
+                        <label for="input-email" data-t="email_label">Электронная почта</label>
+                        <input id="input-email" type="email" inputmode="email" autocomplete="email" data-t-placeholder="email_placeholder" placeholder="name@example.com" required>
+                    </div>
+                    <label class="checkbox-row">
+                        <input id="input-consent" type="checkbox">
+                        <span><span data-t="email_consent_1">Согласен с </span><button type="button" class="link-btn" data-doc="terms" data-t="email_terms_link">условиями сервиса</button><span data-t="email_consent_2"> и </span><button type="button" class="link-btn" data-doc="privacy" data-t="email_privacy_link">политикой конфиденциальности</button></span>
+                    </label>
+                    <p class="form-error" id="email-error" hidden></p>
+                    <button type="submit" class="btn btn--primary btn--lg btn--full" id="btn-email-submit" data-t="email_submit">Перейти к выбору доступа →</button>
+                </form>
+            </div>
+        </section>
+
+        <section class="screen container" id="screen-paywall" hidden>
+            <div class="paywall-hero">
+                <span class="pill-badge pill-badge--success" data-t="paywall_badge">Расчёт завершён</span>
+                <h2 data-t="paywall_title">Ваш ориентировочный IQ и когнитивный профиль готовы</h2>
+                <p class="muted" data-t="paywall_sub">Выберите удобный формат доступа — итоговая цена и условия продления указаны явно на каждой карточке.</p>
+            </div>
+            <div class="teaser-strip" data-t-aria="teaser_aria" aria-label="Превью показателей отчёта (пример до оплаты)">
+                <div class="teaser-metric"><span data-t="teaser_iq_label">Ориентир IQ</span><strong class="blur-mask" aria-hidden="true">118</strong><small data-t="teaser_iq_sub">Скрыто до оплаты</small></div>
+                <div class="teaser-metric"><span data-t="teaser_pct_label">Перцентиль</span><strong class="blur-mask" aria-hidden="true">88%</strong><small data-t="teaser_pct_sub">Позиция в выборке</small></div>
+                <div class="teaser-metric"><span data-t="teaser_dom_label">Сильная сфера</span><strong class="blur-mask" aria-hidden="true" data-t="teaser_dom_val">Логика</strong><small data-t="teaser_dom_sub">Радар по 4 сферам</small></div>
+            </div>
+            <div class="plans-grid" id="paywall-plans"></div>
+            <div class="paywall-cta-box">
+                <button type="button" class="btn btn--primary btn--lg btn--full" id="btn-open-checkout">Открыть мой результат →</button>
+                <div class="paywall-trust-box">
+                    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><use href="/static/icons.svg?v={{VERSION}}#icon-shield"></use></svg>
+                    <p class="paywall-trust" id="paywall-selected-note"></p>
+                </div>
+            </div>
+            <div class="faq-box">
+                <h3 data-t="faq_title">Частые вопросы</h3>
+                <details open>
+                    <summary data-t="faq_q1">Как работает пробный доступ и отмена подписки?</summary>
+                    <p id="faq-answer-trial" data-t="faq_a1_fallback">Пробный тариф открывает полный отчёт на 7 дней, далее действует помесячное продление с отменой в 1 клик в любой момент. Также доступен разовый месяц без автопродления.</p>
+                </details>
+                <details>
+                    <summary data-t="faq_q2">Что именно я получу сразу после оплаты?</summary>
+                    <p data-t="faq_a2">Ориентировочный балл IQ и доверительный интервал, график вашего положения на кривой нормального распределения, радар по 4 когнитивным сферам и разбор каждого из 15 вопросов.</p>
+                </details>
+                <details>
+                    <summary data-t="faq_q3">Является ли этот тест медицинской диагностикой?</summary>
+                    <p data-t="faq_a3">Нет. Это ориентировочная онлайн-оценка когнитивных способностей на основе весовой модели 15 задач, не заменяющая клиническое тестирование.</p>
+                </details>
+            </div>
+        </section>
+
+        <section class="screen container container--narrow" id="screen-checkout" hidden>
+            <button type="button" class="btn btn--ghost btn--sm back-link" id="btn-back-paywall" data-t="checkout_back">← Назад к тарифам</button>
+            <div class="card checkout-card">
+                <div class="demo-banner"><strong data-t="checkout_demo_title">Режим MVP-демонстрации:</strong> <span data-t="checkout_demo_text">реального списания с карты нет, оплата эмулируется на сервере.</span></div>
+                <div class="order-summary">
+                    <div>
+                        <span class="muted" data-t="checkout_plan_label">Выбранный тариф</span>
+                        <h3 id="checkout-plan-title">Пробный доступ 7 дней</h3>
+                        <p class="order-summary__renewal" id="checkout-plan-renewal"></p>
+                    </div>
+                    <strong class="order-summary__price" id="checkout-plan-price">49 ₽</strong>
+                </div>
+                <form id="checkout-form" novalidate>
+                    <div class="field">
+                        <label for="card-number" data-t="checkout_card_label">Номер карты (тестовые данные)</label>
+                        <input id="card-number" type="text" inputmode="numeric" value="4276 5500 0000 4242" maxlength="19" required>
+                    </div>
+                    <div class="field-row">
+                        <div class="field"><label for="card-exp" data-t="checkout_exp_label">Срок</label><input id="card-exp" type="text" inputmode="numeric" value="12/28" maxlength="5" required></div>
+                        <div class="field"><label for="card-cvc" data-t="checkout_cvc_label">CVC</label><input id="card-cvc" type="password" inputmode="numeric" value="123" maxlength="3" required></div>
+                    </div>
+                    <p class="form-error" id="checkout-error" hidden></p>
+                    <button type="submit" class="btn btn--primary btn--lg btn--full" id="btn-pay-submit">Оплатить и открыть результат</button>
+                    <p class="checkout-sec" data-t="checkout_sec">Защищённая виртуальная транзакция · Результат откроется мгновенно</p>
+                </form>
+            </div>
+        </section>
+
+        <section class="screen container" id="screen-result" hidden>
+            <div class="result-header">
+                <div>
+                    <span class="pill-badge pill-badge--success" id="res-plan-badge">Доступ активирован</span>
+                    <h2 data-t="res_title">Ваш когнитивный отчёт</h2>
+                </div>
+                <div class="result-header__actions">
+                    <button type="button" class="btn btn--secondary btn--sm" id="btn-print-result">
+                        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><use href="/static/icons.svg?v={{VERSION}}#icon-printer"></use></svg>
+                        <span data-t="res_print">Печать / PDF</span>
+                    </button>
+                </div>
+            </div>
+            <div class="result-hero-grid">
+                <div class="card score-card">
+                    <span class="muted" data-t="res_iq_label">Ориентировочный IQ</span>
+                    <div class="score-card__value" id="res-iq">100</div>
+                    <div class="score-card__cat" id="res-category">Средний уровень</div>
+                    <div class="score-stats">
+                        <div><span data-t="res_band_label">Диапазон</span><strong id="res-band">95–110</strong></div>
+                        <div><span data-t="res_raw_label">Верных ответов</span><strong id="res-raw">0 / 15</strong></div>
+                        <div><span data-t="res_time_label">Среднее время</span><strong id="res-time">0 сек</strong></div>
+                    </div>
+                </div>
+                <div class="card chart-card">
+                    <h3 data-t="res_bell_title">Положение на кривой распределения</h3>
+                    <div id="chart-bell"></div>
+                    <p class="muted chart-caption" id="res-percentile-text"></p>
+                </div>
+                <div class="card chart-card chart-card--ring">
+                    <h3 data-t="res_pct_title">Ваш перцентиль</h3>
+                    <div id="chart-ring"></div>
+                    <p class="muted chart-caption" data-t="res_pct_desc">Процент участников, результат которых ниже вашего</p>
+                </div>
+            </div>
+            <div class="card domains-card">
+                <h3 data-t="res_domains_title">Когнитивный профиль по 4 сферам</h3>
+                <div class="domains-layout">
+                    <div class="radar-panel" id="chart-radar"></div>
+                    <div class="domains-grid" id="res-domains"></div>
+                </div>
+            </div>
+            <div class="card review-card">
+                <div class="review-card__head">
+                    <h3 data-t="res_review_title">Разбор всех 15 заданий</h3>
+                    <div class="review-filters" id="review-filters">
+                        <button type="button" class="filter-btn is-active" data-filter="all" data-t="res_filter_all">Все</button>
+                        <button type="button" class="filter-btn" data-filter="wrong" data-t="res_filter_wrong">Только ошибки</button>
+                    </div>
+                </div>
+                <div class="review-list" id="res-review"></div>
+            </div>
+            <p class="disclaimer" data-t="res_disclaimer">Результат является ориентировочной оценкой на основе весовой модели 15 тестовых задач и не является медицинским или клиническим заключением.</p>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container site-footer__inner">
+            <span class="muted" data-t="footer_copy">CogniScope Lab · Демонстрационный веб-сервис когнитивной оценки</span>
+            <div class="site-footer__links">
+                <button type="button" class="link-btn" data-doc="terms" data-t="footer_terms">Условия сервиса</button>
+                <button type="button" class="link-btn" data-doc="privacy" data-t="footer_privacy">Политика конфиденциальности</button>
+            </div>
+        </div>
+    </footer>
+
+    <div class="modal-backdrop" id="modal-confirm" hidden>
+        <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+            <h3 id="confirm-title">Завершить тестирование?</h3>
+            <p class="muted" id="confirm-body">Вы ответили на все 15 вопросов. После подтверждения система рассчитает ваш итоговый результат.</p>
+            <div class="modal-actions">
+                <button type="button" class="btn btn--secondary" id="btn-confirm-cancel">Вернуться</button>
+                <button type="button" class="btn btn--primary" id="btn-confirm-ok">Рассчитать результат</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" id="modal-info" hidden>
+        <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="info-title">
+            <h3 id="info-title"></h3>
+            <p class="muted modal-text" id="info-body"></p>
+            <div class="modal-actions">
+                <button type="button" class="btn btn--primary" id="btn-info-close" data-t="modal_ok">Понятно</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+    <script src="/static/i18n.js?v={{VERSION}}" defer></script>
+    <script src="/static/app.js?v={{VERSION}}" defer></script>
+</body>
+</html>

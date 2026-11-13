@@ -1,0 +1,13 @@
+tokens.env
+.env
+data/
+*.db
+*.sqlite3
+*.log
+.venv/
+__pycache__/
+.pytest_cache/
+ai_ready_code/
+*.pyc
+.DS_Store
+utils/
